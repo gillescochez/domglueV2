@@ -299,7 +299,7 @@
 	};
 	
 	// parse glue attribute
-	// TODO improve
+	// TODO improve using regex
 	domglue.extract = function(str) {
 	
 		var obj = {};
@@ -333,5 +333,12 @@
 	
 	// expose domglue
 	window.domglue = domglue;
+	
+	// support amd
+	if (typeof define === 'function' && define.amd) {
+		define('domglue', [], function() {
+			return domglue;
+		});
+	};
 
 })();
