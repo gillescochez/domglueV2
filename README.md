@@ -1,7 +1,7 @@
 domglueV2
 =========
 
-Model to View glue. Bit like domglue but does a LOT more... Still in progress...
+Model to View glue. Bit like domglue but does a LOT more... Still in progress... API will change soon...
 
 # Usage
 
@@ -26,7 +26,7 @@ Quick copy/paste from index.html to show what is currently supported.
 
 	<form data-glue="onsubmit:submitForm" method="post"> 
 		<input type="checkbox" data-glue="attrChecked:isMessageVisible" />
-		<input type="text" x-webkit-speech data-glue="focused:isTextInputEnabled"  />
+		<input type="text" data-glue="focused:isTextInputEnabled"  />
 		<input type="submit" />
 	</form>
 </div>
