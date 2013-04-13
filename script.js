@@ -10,6 +10,9 @@ var model = {
 		},
 		onClick: function() {
 			console.log('clicked', arguments);
+		},
+		toggleMesssageVisible: function() {
+			this.isMessageVisible(!this.isMessageVisible());
 		}
 	};
 

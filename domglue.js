@@ -1,5 +1,7 @@
 (function() {
 
+	'use strict';
+
 	var domglue = function(selector, data) {
 		
 		// return a new component instance
@@ -78,20 +80,34 @@
 			return;
 		};
 		
-		if (target.hasAttribute(domglue.settings.attr)) domglue.setup(instance, target);
-		
-		elements = target.querySelectorAll('[' + domglue.settings.attr + ']');
-		len = elements.length;
-		
-		i = 0;
-		
-		for (; i < len; i++) domglue.setup(instance, elements[i]);
+		domglue.detectAndSetup(instance, target);
+		domglue.detectAndSetup(instance, target, 'attributes');
+		domglue.detectAndSetup(instance, target, 'events');
+		domglue.detectAndSetup(instance, target, 'style');
 	};
 	
-	domglue.setup = function(instance, el) {
+	domglue.detectAndSetup = function(instance, target, extra) {
+	
+		var elements, len, i,
+			attr = domglue.getAttrStr(extra);
+
+		if (target.hasAttribute(attr)) domglue.setup(instance, target);
+		elements = target.querySelectorAll('[' + attr + ']');
+		len = elements.length;
+		i = 0;
+		
+		for (; i < len; i++) domglue.setup(instance, elements[i], extra);
+	};
+	
+	domglue.getAttrStr = function(extra) {
+		return domglue.settings.attr + (extra ? '-' + extra : '' );
+	};
+	
+	domglue.setup = function(instance, el, extra) {
 				
-		var config = domglue.extract(
-			el.getAttribute(domglue.settings.attr)
+		var attr = domglue.getAttrStr(extra),
+			config = domglue.extract(
+			el.getAttribute(attr)
 		);
 
 		if (config) {
@@ -100,14 +116,14 @@
 			config.__target = el;
 			
 			if (domglue.settings.production) {
-				config.__target.removeAttribute(domglue.settings.attr);
+				config.__target.removeAttribute(attr);
 			};
 			
 			// store config object
 			instance[0].push(config);
 			
 			// generate methods / binding
-			domglue.generate(instance, config);
+			domglue.generate(instance, config, extra);
 		};
 	};
 	
@@ -126,9 +142,86 @@
 				args.push(key);
 				args.push(value);
 				
-				domglue.hooks[object.hook].apply(null, args);
+				domglue.hooks[object.hook].apply(instance, args);
 			});
 		};
+	};
+
+	domglue.generate = function(instance, config, extra) {
+		
+		var key, value, isEvent, isClass, isAttr;
+		
+		for (key in config) {
+		
+			value = config[key];
+			
+			//we don't handle anything else than data key (for now)
+			if (!instance[1][value]) continue;
+			
+			isEvent = extra === 'events';
+			isClass = extra === 'style';
+			isAttr = extra === 'attributes';
+			
+			if (domglue.hooks[key]) {
+			
+				instance[2][value].push({
+					hook: key
+				});
+			
+			} else if (isEvent) {
+			
+				domglue.hooks.onEvent(
+					key, instance, value
+				);
+				
+			} else if (isAttr) {
+			
+				instance[2][value].push({
+					hook: 'attr',
+					key: key
+				});
+				
+			} else if (isClass) {
+			
+				instance[2][value].push({
+					hook: 'class',
+					key: key
+				});
+				
+			} else {
+			
+				if (key !== '__target') {
+					throw "Unsupported domglue attribute detected: " + key;
+				};
+			};
+			
+			if (!isEvent) domglue.execute(instance, value, instance[1][value]);
+			
+			// all is to false
+			isEvent = false;
+			isAttr = false;
+			isClass = false;
+		};
+	};
+	
+	// parse glue attribute
+	// TODO improve using regex
+	domglue.extract = function(str) {
+	
+		if (!str) return;
+	
+		var obj = {};
+	
+		str.split(',').forEach(function(pair) {
+		
+			var cols = pair.trim().split(':'),
+				key = cols[0].trim(), 
+				value = (cols[1] || '').trim();
+				
+			if (value) obj[key] = value;
+		});
+		
+		return obj;
 	};
 	
 	// hooks
@@ -156,23 +249,12 @@
 		
 			instance[0].forEach(function(cfg) {
 			
-				if (cfg['attr' + attribute] === key) {
+				if (cfg[attribute] === key) {
 				
 					if (value) {
-						cfg.__target.setAttribute(
-							[
-								attribute.substring(0,1).toLowerCase() 
-								+ attribute.substring(1, attribute.length)
-							], 
-							value
-						);
+						cfg.__target.setAttribute(attribute, value);
 					} else {
-						cfg.__target.removeAttribute(
-							[
-								attribute.substring(0,1).toLowerCase() 
-								+ attribute.substring(1, attribute.length)
-							]
-						);
+						cfg.__target.removeAttribute(attribute);
 					};
 				};
 			});
@@ -185,7 +267,7 @@
 		
 			instance[0].forEach(function(cfg) {
 			
-				if (cfg['class' + attribute] === key) {
+				if (cfg[attribute] === key) {
 				
 					if (!value) cfg.__target.className = cfg.__target.className.replace(cname, '');
 					else cfg.__target.className += ' ' + cname + ' ';
@@ -226,7 +308,7 @@
 		
 			instance[0].forEach(function(cfg) {
 			
-				if (cfg['on' + type] === value) {
+				if (cfg[type] === value) {
 				
 					if (cfg.__target.addEventListener) {
 					
@@ -239,81 +321,6 @@
 				};
 			});
 		}
-	};
-
-	domglue.generate = function(instance, config) {
-		
-		var key, value, isEvent, isClass, isAttr;
-		
-		for (key in config) {
-		
-			value = config[key];
-			
-			//we don't handle anything else than data key (for now)
-			if (!instance[1][value]) continue;
-			
-			isEvent = key.substring(0, 2) === 'on';
-			isClass = key.substring(0, 5) === 'class';
-			isAttr = key.substring(0, 4) === 'attr';
-			
-			if (domglue.hooks[key]) {
-			
-				instance[2][value].push({
-					hook: key
-				});
-			
-			} else if (isEvent) {
-			
-				domglue.hooks.onEvent(
-					key.substr(2, key.length), instance, value
-				);
-				
-			} else if (isAttr) {
-			
-				instance[2][value].push({
-					hook: 'attr',
-					key: key.substring(4, key.length)
-				});
-				
-			} else if (isClass) {
-			
-				instance[2][value].push({
-					hook: 'class',
-					key: key.substring(5, key.length)
-				});
-				
-			} else {
-			
-				if (key !== '__target') {
-					throw "Unsupported domglue attribute detected: " + key;
-				};
-			};
-			
-			if (!isEvent) domglue.execute(instance, value, instance[1][value]);
-			
-			// all is to false
-			isEvent = false;
-			isAttr = false;
-			isClass = false;
-		};
-	};
-	
-	// parse glue attribute
-	// TODO improve using regex
-	domglue.extract = function(str) {
-	
-		var obj = {};
-	
-		str.split(',').forEach(function(pair) {
-		
-			var cols = pair.trim().split(':'),
-				key = cols[0].trim(), 
-				value = (cols[1] || '').trim();
-				
-			if (value) obj[key] = value;
-		});
-		
-		return obj;
 	};
 	
 	// add forEach support if needed

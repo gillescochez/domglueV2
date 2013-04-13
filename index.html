@@ -10,12 +10,28 @@
 
 <div id="content">
 
-    <h1 data-glue="text:title, onclick:onClick, attrTitle:title, attrRel:title, classRed:isRed">Title</h1>
-    <p data-glue="html:message, visible:isMessageVisible">Message</p>
+    <h1 
+		data-glue="text:title"
+		data-glue-style="red:isRed"
+		data-glue-attributes="title:title, rel:title"
+		data-glue-events="click:onClick">
+	</h1>
 
-	<form data-glue="onsubmit:submitForm" method="post"> 
-		<input type="checkbox" data-glue="attrChecked:isMessageVisible" />
-		<input type="text" data-glue="focused:isTextInputEnabled"  />
+    <p data-glue="html:message, visible:isMessageVisible"></p>
+
+	<form 
+		data-glue-events="submit:submitForm" 
+		method="post"
+	> 
+		<input 
+			type="checkbox" 
+			data-glue-attributes="checked:isMessageVisible" 
+			data-glue-events="click:toggleMesssageVisible"
+		/>
+		<input 
+			type="text" 
+			data-glue="focused:isTextInputEnabled"  
+		/>
 		<input type="submit" />
 	</form>
 </div>
