@@ -7,10 +7,10 @@ It's build in the same spirit, the model is just an object and none of its value
 Instead of using one attribute to bind everything (events, etttributes, classes, text, focus....) it uses multiple attributes 
 which allows for a clearer formatting, and makes it easier to read.
 
-'data-glue' attribute for focuse, text, html and visible hooks
-'data-glue-attributes' for.... attributes
-'data-glue-style' for CSS classes
-'data-glue-events' for event binding (any event. the event object is passed)
+* 'data-glue' attribute for focuse, text, html and visible hooks
+* 'data-glue-attributes' for.... attributes
+* 'data-glue-style' for CSS classes
+* 'data-glue-events' for event binding (any event. the event object is passed)
 
 Domglue doesn't support any logic as hook value inside the attributes, only object property reference.
 
